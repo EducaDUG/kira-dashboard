@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kira Learning Dashboard</title>
+<style>
+  :root{
+    /* Palette pulled directly from Discovery Lab's live homepage
+       (https://educadug.github.io/discovery-lab/, engine/style.css?v=12),
+       which renders with :root, [data-theme="earth"] - "Environmental Science -
+       soil, water, air". Confirmed against the fetched stylesheet, not invented. */
+    --paper:#F2EFE6; --surface:#FBF9F3; --surface-2:#EAE6D9;
+    --ink:#1D211C; --ink-2:#4A5148; --ink-3:#757C72;
+    --line:#1D211C24; --line-strong:#1D211C40;
+    --accent:#40634C; --accent-hi:#517B5E; --accent-ink:#FBF9F3;
+    --accent-wash:#40634C14;
+    --signal:#B5551F; --signal-wash:#B5551F14;
+    --positive:#2F6B45; --caution:#A66B00;
+    --radius:14px; --radius-lg:22px;
+    --font-display:"Fraunces","Iowan Old Style",Georgia,serif;
+    --font-ui:"Public Sans",ui-sans-serif,system-ui,"Segoe UI",sans-serif;
+    --font-data:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--font-ui);background-color:var(--paper);color:var(--ink);line-height:1.55;
+    /* Faint field-notebook grid, same recipe as the Discovery Lab homepage body rule. */
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:48px 48px,48px 48px;
+    background-position:-1px -1px;
+  }
+  a{color:var(--signal);}
+  .eyebrow-label{font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--signal);display:inline-flex;align-items:center;gap:6px;}
+  .target-icon{display:inline-block;width:14px;height:14px;vertical-align:middle;color:var(--signal);}
+  .shell{max-width:920px;margin:0 auto;padding:0 20px;}
+  header.site{background:var(--surface);border-bottom:1px dashed var(--line-strong);padding:22px 0;}
+  header.site h1{font-family:var(--font-display);font-size:1.9rem;margin:0 0 4px;
+    font-variation-settings:"wght" 600;}
+  header.site p{margin:0;color:var(--ink-2);font-size:0.95rem;}
+  nav.tabs{display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px dashed var(--line-strong);
+    padding:10px 0;position:sticky;top:0;z-index:5;}
+  nav.tabs .shell{display:flex;gap:8px;flex-wrap:wrap;}
+  .tab-btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);
+    padding:9px 14px;border-radius:999px;font:inherit;font-family:var(--font-data);
+    text-transform:uppercase;letter-spacing:.04em;font-weight:700;font-size:0.78rem;cursor:pointer;}
+  .tab-btn.active{background:var(--signal);color:var(--accent-ink);border-color:var(--signal);}
+  main{padding:26px 0 60px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  h2.panel-title{font-family:var(--font-display);font-size:1.5rem;margin:0 0 6px;}
+  .panel-sub{color:var(--ink-2);margin:0 0 20px;font-size:0.95rem;max-width:64ch;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:18px 20px;margin-bottom:16px;}
+  .card + .card{border-top:1px dashed var(--line-strong);}
+  .card h3{margin:0 0 8px;font-size:1.05rem;font-family:var(--font-display);}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:var(--radius);padding:14px 16px;}
+  .stat .num{font-family:var(--font-data);font-size:1.6rem;font-weight:700;color:var(--accent);}
+  .stat .label{font-size:0.8rem;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em;}
+  .focus-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+  .focus-card{border-radius:var(--radius);padding:16px;border:1px solid var(--line);}
+  .focus-card.win{border-left:4px solid var(--positive);background:#2F6B4508;}
+  .focus-card.tonight{border-left:4px solid var(--signal);background:var(--signal-wash);}
+  .focus-card.edge{border-left:4px solid var(--caution);background:#A66B0010;}
+  .focus-card .eyebrow{font-family:var(--font-data);font-size:.72rem;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--ink-2);margin-bottom:6px;}
+  .quote-card{border-left:3px solid var(--accent);padding:12px 16px;margin-bottom:10px;background:var(--surface);
+    border-radius:var(--radius);}
+  .quote-card blockquote{margin:0 0 6px;font-family:var(--font-display);font-size:1.05rem;font-style:italic;color:var(--ink);}
+  .quote-card .interp{font-size:0.85rem;color:var(--ink-2);}
+  .pill{display:inline-block;font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;
+    letter-spacing:.06em;padding:3px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--ink-2);
+    background:var(--surface-2);margin-right:6px;}
+  .pill.stage-Emerging{color:#A66B00;border-color:#A66B0055;background:#A66B0014;}
+  .pill.stage-Developing{color:#B5551F;border-color:#B5551F55;background:#B5551F14;}
+  .pill.stage-Growing{color:#517B5E;border-color:#517B5E55;background:#517B5E14;}
+  .pill.stage-Secure{color:#2F6B45;border-color:#2F6B4555;background:#2F6B4514;}
+  .chart-card svg{width:100%;height:auto;display:block;}
+  .chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:0.82rem;color:var(--ink-2);}
+  .legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+  .evidence-pop{display:none;margin-top:10px;padding:10px 12px;border-radius:var(--radius);
+    background:var(--surface-2);font-size:0.86rem;color:var(--ink-2);}
+  .evidence-pop.show{display:block;}
+  .milestone{display:flex;gap:12px;margin-bottom:14px;}
+  .milestone .dot{width:10px;height:10px;border-radius:50%;background:var(--signal);flex:0 0 auto;margin-top:6px;}
+  .milestone .date{font-family:var(--font-data);font-size:0.78rem;color:var(--ink-3);}
+  .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .profile-grid .item{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;}
+  .profile-grid .item .k{font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;color:var(--ink-2);
+    margin-bottom:4px;}
+  .basis-note{font-size:0.8rem;color:var(--ink-3);margin-top:6px;}
+  ul.plain{margin:0;padding-left:18px;}
+  ul.plain li{margin-bottom:6px;}
+  details.session{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px;background:var(--surface);}
+  details.session summary{padding:12px 16px;cursor:pointer;font-weight:700;list-style:none;font-family:var(--font-display);}
+  details.session summary::-webkit-details-marker{display:none;}
+  details.session summary .sdate{font-family:var(--font-data);font-size:0.78rem;color:var(--ink-2);
+    font-weight:400;display:block;text-transform:uppercase;letter-spacing:.04em;}
+  details.session .session-body{padding:0 16px 16px;border-top:1px dashed var(--line-strong);}
+  details.session .session-body h4{font-size:0.85rem;margin:14px 0 6px;color:var(--ink-2);text-transform:uppercase;
+    letter-spacing:.03em;}
+  .resource-link{display:block;margin-bottom:8px;}
+  .resource-link a{font-weight:700;word-break:break-word;}
+  .resource-link .note{font-size:0.85rem;color:var(--ink-2);}
+  .about-portrait-row{display:flex;gap:18px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .btn-linkedin{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-ink);
+    padding:10px 16px;border-radius:999px;text-decoration:none;font-weight:700;font-size:0.9rem;}
+  .about-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;margin-bottom:22px;}
+  .about-photo-wrap{position:relative;width:168px;height:168px;margin:6px 0 8px;display:flex;align-items:center;justify-content:center;}
+  .about-photo-wrap::before{content:"";position:absolute;inset:-22px;border-radius:50%;
+    background:radial-gradient(circle,#40634C55 0%,#40634C22 40%,transparent 72%);}
+  .about-photo-wrap::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--accent-hi);opacity:.65;}
+  .about-photo{position:relative;width:168px;height:168px;border-radius:50%;object-fit:cover;
+    border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line-strong);z-index:1;}
+  .about-heading{font-family:var(--font-display);font-size:1.9rem;margin:2px 0 0;font-variation-settings:"wght" 600;}
+  .about-subheading{color:var(--ink-2);max-width:52ch;margin:0;font-size:0.98rem;}
+  .about-chip-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 4px;}
+  .about-chip{font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;
+    padding:5px 12px;border-radius:999px;border:1px solid var(--line-strong);color:var(--ink-2);background:var(--surface-2);}
+  .about-closing h3{margin:0 0 6px;font-family:var(--font-display);font-size:1.1rem;}
+  footer.disclaimer{border-top:1px solid var(--line);margin-top:24px;padding-top:16px;font-size:0.8rem;color:var(--ink-3);}
+  @media (max-width:640px){
+    .stat-row,.focus-row,.profile-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="shell">
+    <h1>Kira's Learning Dashboard</h1>
+    <p>A voluntary, supplementary learning resource from Mr. Guevara. Please refer to Canvas / the Learning Lab for grades, deadlines and official progress reports.</p>
+  </div>
+</header>
+<nav class="tabs">
+  <div class="shell">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="progress">Progress</button>
+    <button class="tab-btn" data-tab="helpathome">Help at Home</button>
+    <button class="tab-btn" data-tab="sessions">Sessions</button>
+    <button class="tab-btn" data-tab="about">About</button>
+  </div>
+</nav>
+<main class="shell">
+
+  <section class="panel active" id="tab-overview"></section>
+  <section class="panel" id="tab-progress"></section>
+  <section class="panel" id="tab-helpathome"></section>
+  <section class="panel" id="tab-sessions"></section>
+  <section class="panel" id="tab-about"></section>
+
+</main>
+
+<script id="dashboard-v2-data" type="application/json">{
+  "student_first_name": "Kira",
+  "programme": "",
+  "canvas_note": "Please refer to Canvas for quantitative information such as grades, deadlines, submitted work, and formal assessment data.",
+  "dashboard_purpose_note": "This dashboard is a voluntary teaching resource created by Mr. Guevara to show the student's longer-term learning journey, recurring patterns, and next steps across lessons.",
+  "professional_observation_note": "The learning notes in this dashboard are Mr. Guevara's professional observations based on lessons. They are not fixed labels, diagnoses, grades, or formal assessment results.",
+  "stats": {
+    "sessions_logged": 4,
+    "distinct_skills_tried": 5,
+    "milestones_hit": 0
+  },
+  "skill_threads": {
+    "Critical thinking": [
+      {
+        "session_date_iso": "2026-10-14",
+        "session_date": "14 October 2026",
+        "lesson_title": "Course Orientation Energy Transition",
+        "stage": "Developing",
+        "evidence": "Wrote a reasoned answer about the energy transition and linked it to his own cyanobacteria research."
+      },
+      {
+        "session_date_iso": "2026-10-21",
+        "session_date": "21 October 2026",
+        "lesson_title": "Energy Transformations And Hydropower",
+        "stage": "Developing",
+        "evidence": "Chose the higher dam gates as producing more electricity and explained that the water has more potential energy."
+      },
+      {
+        "session_date_iso": "2026-11-04",
+        "session_date": "4 November 2026",
+        "lesson_title": "Greenhouse Gases And Wind",
+        "stage": "Growing",
+        "evidence": "Noticed on his own that the speed of the carbon dioxide increase makes today different from the past, and taught me how to use Google Docs tabs."
+      }
+    ],
+    "Initiative and self-direction": [
+      {
+        "session_date_iso": "2026-10-14",
+        "session_date": "14 October 2026",
+        "lesson_title": "Course Orientation Energy Transition",
+        "stage": "Developing",
+        "evidence": "Wrote a reasoned answer about the energy transition and linked it to his own cyanobacteria research."
+      }
+    ],
+    "Communication": [
+      {
+        "session_date_iso": "2026-10-21",
+        "session_date": "21 October 2026",
+        "lesson_title": "Energy Transformations And Hydropower",
+        "stage": "Emerging",
+        "evidence": "Chose the higher dam gates as producing more electricity and explained that the water has more potential energy."
+      },
+      {
+        "session_date_iso": "2026-10-28",
+        "session_date": "28 October 2026",
+        "lesson_title": "Energy Island Simulation Lab",
+        "stage": "Emerging",
+        "evidence": "Completed the energy island simulation and quiz while unwell, and correctly said that sunlight is a primary energy source."
+      },
+      {
+        "session_date_iso": "2026-11-04",
+        "session_date": "4 November 2026",
+        "lesson_title": "Greenhouse Gases And Wind",
+        "stage": "Developing",
+        "evidence": "Noticed on his own that the speed of the carbon dioxide increase makes today different from the past, and taught me how to use Google Docs tabs."
+      }
+    ],
+    "Productivity and leadership": [
+      {
+        "session_date_iso": "2026-10-28",
+        "session_date": "28 October 2026",
+        "lesson_title": "Energy Island Simulation Lab",
+        "stage": "Emerging",
+        "evidence": "Completed the energy island simulation and quiz while unwell, and correctly said that sunlight is a primary energy source."
+      }
+    ],
+    "Information literacy": [
+      {
+        "session_date_iso": "2026-11-04",
+        "session_date": "4 November 2026",
+        "lesson_title": "Greenhouse Gases And Wind",
+        "stage": "Developing",
+        "evidence": "Noticed on his own that the speed of the carbon dioxide increase makes today different from the past, and taught me how to use Google Docs tabs."
+      }
+    ]
+  },
+  "milestones": [],
+  "learning_profile": {
+    "based_on_sessions": 4,
+    "engages_best_when": "",
+    "responds_well_to": "",
+    "often_curious_about": "",
+    "currently_trying": ""
+  },
+  "voice_quotes": [
+    {
+      "quote": "The amount of carbon dioxide is increasing year by year because of burning fuels.",
+      "session_date": "4 November 2026",
+      "lesson_title": "Greenhouse Gases And Wind"
+    },
+    {
+      "quote": "The simulation was making sense little by little.",
+      "session_date": "28 October 2026",
+      "lesson_title": "Energy Island Simulation Lab"
+    },
+    {
+      "quote": "Visualize is important.",
+      "session_date": "21 October 2026",
+      "lesson_title": "Energy Transformations And Hydropower"
+    },
+    {
+      "quote": "Kira told Diego he is researching whether cyanobacterial toxins affect the growth of land plants.",
+      "session_date": "14 October 2026",
+      "lesson_title": "Course Orientation Energy Transition"
+    }
+  ],
+  "sessions": [
+    {
+      "session_date_iso": "2026-11-04",
+      "session_date": "4 November 2026",
+      "lesson_title": "Greenhouse Gases And Wind",
+      "subject": "",
+      "summary": "Kira joined with a flu and showed me how his project milestones sit on separate Google Docs tabs. We watched an ancient spiral water pump, reviewed primary energy, and read a graph of carbon dioxide over 60 years and over 51 million years. He worked out that the speed of the current rise is what makes it different, and we corrected two ideas about carbon monoxide and the ozone layer. He explained the sea breeze and mountain wind, we watched a demonstration of warm air rising and cold air sinking, and we finished with biomimicry.",
+      "aim": "To help Kira explain the causes and effects of rising carbon dioxide, understand that wind is caused by uneven heating, and see that many renewable energy ideas are old and come from observing nature.",
+      "big_win": "Noticed on his own that the speed of the carbon dioxide increase makes today different from the past, and taught me how to use Google Docs tabs.",
+      "next_priority": "Learn the full list of greenhouse gases, separate the ozone layer problem from the greenhouse effect, and give longer spoken explanations.",
+      "current_unit": "US Renewable Energy, Module 1: the global energy shift. Today covered the history of renewable energy, greenhouse gases and the ozone layer, the origin of wind, and biomimicry.",
+      "student_pacing": "On pace. This was the fourth lesson in the six-module, 25-hour US Renewable Energy course. Milestone 1 has been graded and Milestone 2 has been submitted.",
+      "lesson_engagement": "No concerns. Kira joined with a flu, answered questions and enjoyed explaining things he knew. He said he likes the course and still dislikes the Learning Lab.",
+      "additional_notes": "Milestone 1 has been graded and Milestone 2 submitted. Kira has a competition in two or three weeks and said it should not affect our lessons. He is recovering from a flu.",
+      "student_voice": "Kira told me that the amount of carbon dioxide is increasing year by year because of burning fuels.",
+      "home_support": [
+        "Ask Kira to explain where wind comes from.",
+        "Ask Kira what damaged the ozone layer and how it was solved."
+      ],
+      "extension_task": "Find a living thing that could help to improve a renewable energy device, describe what it does well and explain how an engineer could copy that feature in a wind turbine, a solar panel or a water pump.",
+      "family_friendly_science_explanation": "Wind is air moving because the sun heats some places more than others. Warm air is lighter and rises, and cooler, heavier air moves in to take its place. Carbon dioxide traps some heat in the atmosphere, so the extra carbon dioxide from burning fossil fuels warms the planet. That is one reason countries are moving towards renewable energy.",
+      "ideas_we_are_refining": "",
+      "strengths": [
+        "Defining primary energy correctly",
+        "Reading numbers from a slide",
+        "Explaining wind from his own knowledge",
+        "Noticing that the speed of change matters"
+      ],
+      "areas_for_growth": [
+        "Remembering the full list of greenhouse gases",
+        "Separating the ozone layer problem from the greenhouse effect",
+        "Giving longer spoken explanations"
+      ],
+      "student_glows": [
+        "Taught me how to use document tabs in Google Docs.",
+        "Explained the sea breeze and mountain wind from his own knowledge.",
+        "Noticed that the speed of the carbon dioxide increase is what makes today different.",
+        "Read the slide numbers accurately and accepted a correction quickly."
+      ],
+      "student_grows": [
+        "Remembering the full list of greenhouse gases.",
+        "Separating the ozone layer problem from the greenhouse effect.",
+        "Giving longer spoken explanations."
+      ],
+      "skills_observed": [
+        "explaining cause and effect",
+        "reading graphs and numbers",
+        "scientific reasoning",
+        "linking economics to climate decisions",
+        "organising project work in Google Docs"
+      ],
+      "next_steps": [
+        "List the greenhouse gases with a source for each",
+        "Write a paragraph explaining where wind comes from",
+        "Write three sentences about an invention that copies nature"
+      ],
+      "resources": [
+        {
+          "title": "Climate Change: Atmospheric Carbon Dioxide - NOAA Climate.gov",
+          "url": "https://www.climate.gov/news-features/understanding-climate/climate-change-atmospheric-carbon-dioxide",
+          "note": "Look at the graph together and ask what has changed in the last 60 years and why."
+        },
+        {
+          "title": "Ozone Hole Watch - NASA",
+          "url": "https://ozonewatch.gsfc.nasa.gov/",
+          "note": "Look at the maps and ask what caused the ozone hole and what helped it to recover."
+        },
+        {
+          "title": "Wind Explained - U.S. Energy Information Administration",
+          "url": "https://www.eia.gov/energyexplained/wind/",
+          "note": "Read the first section and ask Kira to explain in his own words why wind blows."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "session_date": "4 November 2026",
+        "session_date_iso": "2026-11-04",
+        "lesson_title": "Greenhouse Gases And Wind",
+        "summary": "Kira joined with a flu and showed me how his project milestones sit on separate Google Docs tabs. We watched an ancient spiral water pump, reviewed primary energy, and read a graph of carbon dioxide over 60 years and over 51 million years. He worked out that the speed of the current rise is what makes it different, and we corrected two ideas about carbon monoxide and the ozone layer. He explained the sea breeze and mountain wind, we watched a demonstration of warm air rising and cold air sinking, and we finished with biomimicry.",
+        "aim": "To help Kira explain the causes and effects of rising carbon dioxide, understand that wind is caused by uneven heating, and see that many renewable energy ideas are old and come from observing nature.",
+        "headline_insight": "Kira reasons well when he can link new ideas to what he already knows, and he spotted that the speed of the carbon dioxide rise is what matters.",
+        "current_focus": "Greenhouse gases, the ozone layer, the origin of wind and biomimicry in Module 1 of US Renewable Energy",
+        "big_win": "Noticed on his own that the speed of the carbon dioxide increase makes today different from the past, and taught me how to use Google Docs tabs.",
+        "next_priority": "Learn the full list of greenhouse gases, separate the ozone layer problem from the greenhouse effect, and give longer spoken explanations.",
+        "engagement_status": "Joined with a flu, answered questions, explained wind from his own knowledge and enjoyed teaching me about Google Docs tabs.",
+        "why_this_matters": "Understanding why carbon dioxide is rising, and how quickly, explains why countries are moving towards renewable energy.",
+        "progress_since_last_update": "Moved from the energy island simulation and the early history of renewable energy to greenhouse gases, the ozone layer, the origin of wind and biomimicry.",
+        "home_support": [
+          "Ask Kira to explain where wind comes from.",
+          "Ask Kira what damaged the ozone layer and how it was solved."
+        ],
+        "student_voice": "Kira told me that the amount of carbon dioxide is increasing year by year because of burning fuels.",
+        "upcoming_focus": [
+          "More on renewable energy and how engineers copy nature",
+          "Module 1 consolidation",
+          "Project milestones"
+        ],
+        "strengths": [
+          "Defining primary energy correctly",
+          "Reading numbers from a slide",
+          "Explaining wind from his own knowledge",
+          "Noticing that the speed of change matters"
+        ],
+        "areas_for_growth": [
+          "Remembering the full list of greenhouse gases",
+          "Separating the ozone layer problem from the greenhouse effect",
+          "Giving longer spoken explanations"
+        ],
+        "next_steps": [
+          "List the greenhouse gases with a source for each",
+          "Write a paragraph explaining where wind comes from",
+          "Write three sentences about an invention that copies nature"
+        ],
+        "skills_observed": [
+          "explaining cause and effect",
+          "reading graphs and numbers",
+          "scientific reasoning",
+          "linking economics to climate decisions",
+          "organising project work in Google Docs"
+        ],
+        "engagement": "Joined with a flu, answered questions, explained wind from his own knowledge and was quick to accept corrections.",
+        "misconceptions_noticed": "Kira thought carbon monoxide is a direct greenhouse gas, and that greenhouse gases were melting the ozone layer, which was in fact damaged by CFCs. He first thought governments avoid cutting emissions to protect their citizens and then moved to the cost reason.",
+        "confidence_level": "Comfortable with primary energy, carbon dioxide and the causes of wind. He hesitates when he has to put longer explanations into English, so I may be underestimating what he understands. He was unwell today.",
+        "successful_teaching_strategies": [
+          "graphs and short videos",
+          "asking him to explain what he sees",
+          "checking a doubtful fact together",
+          "linking ideas to Japan"
+        ],
+        "adaptation_to_reach_full_potential": "Kira does well when he can connect a new idea to something he knows. I will keep using graphs and short videos, give him key words ahead of time and a little more time to put longer answers into English, and let him use short written explanations as well as speaking.",
+        "extension_task": "Find a living thing that could help to improve a renewable energy device, describe what it does well and explain how an engineer could copy that feature in a wind turbine, a solar panel or a water pump.",
+        "family_friendly_science_explanation": "Wind is air moving because the sun heats some places more than others. Warm air is lighter and rises, and cooler, heavier air moves in to take its place. Carbon dioxide traps some heat in the atmosphere, so the extra carbon dioxide from burning fossil fuels warms the planet. That is one reason countries are moving towards renewable energy.",
+        "resources": [
+          {
+            "title": "Climate Change: Atmospheric Carbon Dioxide - NOAA Climate.gov",
+            "url": "https://www.climate.gov/news-features/understanding-climate/climate-change-atmospheric-carbon-dioxide",
+            "note": "Look at the graph together and ask what has changed in the last 60 years and why."
+          },
+          {
+            "title": "Ozone Hole Watch - NASA",
+            "url": "https://ozonewatch.gsfc.nasa.gov/",
+            "note": "Look at the maps and ask what caused the ozone hole and what helped it to recover."
+          },
+          {
+            "title": "Wind Explained - U.S. Energy Information Administration",
+            "url": "https://www.eia.gov/energyexplained/wind/",
+            "note": "Read the first section and ask Kira to explain in his own words why wind blows."
+          }
+        ],
+        "student_pacing": "On pace. This was the fourth lesson in the six-module, 25-hour US Renewable Energy course. Milestone 1 has been graded and Milestone 2 has been submitted.",
+        "current_unit": "US Renewable Energy, Module 1: the global energy shift. Today covered the history of renewable energy, greenhouse gases and the ozone layer, the origin of wind, and biomimicry.",
+        "student_glows": [
+          "Taught me how to use document tabs in Google Docs.",
+          "Explained the sea breeze and mountain wind from his own knowledge.",
+          "Noticed that the speed of the carbon dioxide increase is what makes today different.",
+          "Read the slide numbers accurately and accepted a correction quickly."
+        ],
+        "student_grows": [
+          "Remembering the full list of greenhouse gases.",
+          "Separating the ozone layer problem from the greenhouse effect.",
+          "Giving longer spoken explanations."
+        ],
+        "assignments_outstanding": [],
+        "lesson_engagement": "No concerns. Kira joined with a flu, answered questions and enjoyed explaining things he knew. He said he likes the course and still dislikes the Learning Lab.",
+        "additional_notes": "Milestone 1 has been graded and Milestone 2 submitted. Kira has a competition in two or three weeks and said it should not affect our lessons. He is recovering from a flu.",
+        "misconceptions": [],
+        "communication_patterns": [],
+        "participation_patterns": [],
+        "reasoning_patterns": [],
+        "successful_strategies": [],
+        "accuracy_patterns": [],
+        "confidence_patterns": [],
+        "independence_patterns": [],
+        "vocabulary_patterns": [],
+        "skills_focus": [],
+        "indicators": {},
+        "dashboard_subject": "Us Renewable Energy"
+      },
+      "skills": [
+        {
+          "evidence": "Taught me how to use document tabs in Google Docs.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Explained the sea breeze and mountain wind from his own knowledge.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Noticed that the speed of the carbon dioxide increase is what makes today different.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Read the slide numbers accurately and accepted a correction quickly.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Defining primary energy correctly",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Reading numbers from a slide",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Explaining wind from his own knowledge",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Noticing that the speed of change matters",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "explaining cause and effect",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "reading graphs and numbers",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "scientific reasoning",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "linking economics to climate decisions",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "organising project work in Google Docs",
+          "source_field": "skills_observed"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Remembering the full list of greenhouse gases.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Separating the ozone layer problem from the greenhouse effect.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Giving longer spoken explanations.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Remembering the full list of greenhouse gases",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Separating the ozone layer problem from the greenhouse effect",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Giving longer spoken explanations",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Learn the full list of greenhouse gases, separate the ozone layer problem from the greenhouse effect, and give longer spoken explanations.",
+          "source_field": "next_priority"
+        }
+      ]
+    },
+    {
+      "session_date_iso": "2026-10-28",
+      "session_date": "28 October 2026",
+      "lesson_title": "Energy Island Simulation Lab",
+      "subject": "",
+      "summary": "Kira joined while unwell and completed a virtual laboratory practical in which he built solar, wind, hydro, geothermal, gas and battery plants to supply an island while keeping the finances healthy. He took records, answered the quiz and generated his learning evidence PDF, which he sent in the chat because the Learning Lab submit button did not work. We then began the history of renewable energy with Persian windmills and norias, steam and coal, and the 1973 oil embargo.",
+      "aim": "To give Kira hands-on practice in balancing energy sources against demand and cost in a simulation, and to start building a picture of how renewable energy has been used through history.",
+      "big_win": "Completed the energy island simulation and quiz while unwell, and correctly said that sunlight is a primary energy source.",
+      "next_priority": "Explain choices out loud, read instructions fully before starting, and describe the island plan in writing.",
+      "current_unit": "US Renewable Energy, Module 1: the global energy shift. A virtual laboratory practical on balancing energy sources on an island, followed by the start of the history of renewable energy.",
+      "student_pacing": "On pace. This was the third lesson in the six-module, 25-hour US Renewable Energy course. The Module 1 exam is coming up with a revision website available, and the project is due on 18 December.",
+      "lesson_engagement": "No concerns. Kira joined while unwell, shared his screen, followed instructions and completed the simulation and quiz, with short answers.",
+      "additional_notes": "The Learning Lab submit button did not work, so Kira sent his PDF in the Zoom chat and I will upload it for him. Next lesson starts with a video about water wheels, and the Module 1 exam is coming up.",
+      "student_voice": "Kira told me the simulation was making sense little by little.",
+      "home_support": [
+        "Ask Kira to tell you what he built on the island and why.",
+        "Encourage five to ten minutes on the revision website for the first module exam."
+      ],
+      "extension_task": "Design a simple renewable energy plan for a new town with no power lines, say what it will need to build, why you chose that source, and what would happen on a day with no sun and no wind.",
+      "family_friendly_science_explanation": "Electricity has to be made at the moment it is used, so a power grid always balances supply and demand. Solar panels only work in sunlight and wind turbines only work when the wind blows, so batteries and gas plants help to fill the gaps. Long before electricity, people used rivers and wind to turn wheels and mills, which is also renewable energy.",
+      "ideas_we_are_refining": "",
+      "strengths": [
+        "Calm and willing to try a new type of activity",
+        "Correct about primary energy",
+        "Solving a practical problem by sending the PDF in chat"
+      ],
+      "areas_for_growth": [
+        "Reading instructions fully before starting",
+        "Explaining choices out loud",
+        "Telling me when something is not clear"
+      ],
+      "student_glows": [
+        "Answered the primary energy question correctly and knew what a hypothesis is.",
+        "Went back and read the instructions when asked.",
+        "Stayed focused while unwell and sent the PDF in chat when the submit button failed."
+      ],
+      "student_grows": [
+        "Reading instructions fully before starting.",
+        "Explaining choices out loud while working.",
+        "Telling me when something is not clear."
+      ],
+      "skills_observed": [
+        "following written instructions",
+        "balancing supply and demand in a simulation",
+        "classifying primary energy",
+        "taking records",
+        "solving a practical problem"
+      ],
+      "next_steps": [
+        "Write a paragraph about the energy island",
+        "Give an advantage and a disadvantage for two power plants",
+        "Write about early uses of moving water and wind"
+      ],
+      "resources": [
+        {
+          "title": "History of Hydropower - U.S. Department of Energy",
+          "url": "https://www.energy.gov/eere/water/history-hydropower",
+          "note": "Read the opening paragraphs together and compare early water wheels with a modern hydropower station."
+        },
+        {
+          "title": "History of U.S. Wind Energy - U.S. Department of Energy",
+          "url": "https://www.energy.gov/eere/wind/history-wind-energy",
+          "note": "Look at the early windmill pictures and ask what the wind was used for before electricity."
+        },
+        {
+          "title": "Energy Sources - U.S. Energy Information Administration Energy Kids",
+          "url": "https://www.eia.gov/kids/energy-sources/",
+          "note": "Choose two sources and ask whether each is renewable and primary or secondary."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "session_date": "28 October 2026",
+        "session_date_iso": "2026-10-28",
+        "lesson_title": "Energy Island Simulation Lab",
+        "summary": "Kira joined while unwell and completed a virtual laboratory practical in which he built solar, wind, hydro, geothermal, gas and battery plants to supply an island while keeping the finances healthy. He took records, answered the quiz and generated his learning evidence PDF, which he sent in the chat because the Learning Lab submit button did not work. We then began the history of renewable energy with Persian windmills and norias, steam and coal, and the 1973 oil embargo.",
+        "aim": "To give Kira hands-on practice in balancing energy sources against demand and cost in a simulation, and to start building a picture of how renewable energy has been used through history.",
+        "headline_insight": "Kira learns calmly through hands-on simulations, and I would like to hear more of his reasoning out loud.",
+        "current_focus": "Balancing energy sources and the history of renewable energy in Module 1 of US Renewable Energy",
+        "big_win": "Completed the energy island simulation and quiz while unwell, and correctly said that sunlight is a primary energy source.",
+        "next_priority": "Explain choices out loud, read instructions fully before starting, and describe the island plan in writing.",
+        "engagement_status": "Joined while unwell, followed instructions, completed the simulation and quiz, and gave short answers.",
+        "why_this_matters": "Running an energy island shows why real power grids need several energy sources and why cost matters as well as clean energy.",
+        "progress_since_last_update": "Moved from energy transformations and hydropower to applying ideas in a simulation and starting the history of renewable energy.",
+        "home_support": [
+          "Ask Kira to tell you what he built on the island and why.",
+          "Encourage five to ten minutes on the revision website for the first module exam."
+        ],
+        "student_voice": "Kira told me the simulation was making sense little by little.",
+        "upcoming_focus": [
+          "A video about water wheels",
+          "The history of renewable energy",
+          "Preparing for the Module 1 exam"
+        ],
+        "strengths": [
+          "Calm and willing to try a new type of activity",
+          "Correct about primary energy",
+          "Solving a practical problem by sending the PDF in chat"
+        ],
+        "areas_for_growth": [
+          "Reading instructions fully before starting",
+          "Explaining choices out loud",
+          "Telling me when something is not clear"
+        ],
+        "next_steps": [
+          "Write a paragraph about the energy island",
+          "Give an advantage and a disadvantage for two power plants",
+          "Write about early uses of moving water and wind"
+        ],
+        "skills_observed": [
+          "following written instructions",
+          "balancing supply and demand in a simulation",
+          "classifying primary energy",
+          "taking records",
+          "solving a practical problem"
+        ],
+        "engagement": "Joined while unwell, shared his screen, followed instructions and completed the simulation and quiz.",
+        "misconceptions_noticed": "No clear misconception was heard. Kira needed one reminder to go back and read the introduction, and he gave short answers, so I could not see all of his thinking.",
+        "confidence_level": "Calm and willing to try, and he said the simulation became clearer little by little. He was unwell, so I may be seeing a quieter version of him.",
+        "successful_teaching_strategies": [
+          "a hands-on simulation as a virtual laboratory",
+          "asking him to go back and read the introduction",
+          "comparing a noria to a Ferris wheel"
+        ],
+        "adaptation_to_reach_full_potential": "Kira seems to learn well from hands-on tasks where he can try things and see what happens. I will keep using simulations alongside explanations and ask him to say why he chose each plant so I can see his reasoning.",
+        "extension_task": "Design a simple renewable energy plan for a new town with no power lines, say what it will need to build, why you chose that source, and what would happen on a day with no sun and no wind.",
+        "family_friendly_science_explanation": "Electricity has to be made at the moment it is used, so a power grid always balances supply and demand. Solar panels only work in sunlight and wind turbines only work when the wind blows, so batteries and gas plants help to fill the gaps. Long before electricity, people used rivers and wind to turn wheels and mills, which is also renewable energy.",
+        "resources": [
+          {
+            "title": "History of Hydropower - U.S. Department of Energy",
+            "url": "https://www.energy.gov/eere/water/history-hydropower",
+            "note": "Read the opening paragraphs together and compare early water wheels with a modern hydropower station."
+          },
+          {
+            "title": "History of U.S. Wind Energy - U.S. Department of Energy",
+            "url": "https://www.energy.gov/eere/wind/history-wind-energy",
+            "note": "Look at the early windmill pictures and ask what the wind was used for before electricity."
+          },
+          {
+            "title": "Energy Sources - U.S. Energy Information Administration Energy Kids",
+            "url": "https://www.eia.gov/kids/energy-sources/",
+            "note": "Choose two sources and ask whether each is renewable and primary or secondary."
+          }
+        ],
+        "student_pacing": "On pace. This was the third lesson in the six-module, 25-hour US Renewable Energy course. The Module 1 exam is coming up with a revision website available, and the project is due on 18 December.",
+        "current_unit": "US Renewable Energy, Module 1: the global energy shift. A virtual laboratory practical on balancing energy sources on an island, followed by the start of the history of renewable energy.",
+        "student_glows": [
+          "Answered the primary energy question correctly and knew what a hypothesis is.",
+          "Went back and read the instructions when asked.",
+          "Stayed focused while unwell and sent the PDF in chat when the submit button failed."
+        ],
+        "student_grows": [
+          "Reading instructions fully before starting.",
+          "Explaining choices out loud while working.",
+          "Telling me when something is not clear."
+        ],
+        "assignments_outstanding": [],
+        "lesson_engagement": "No concerns. Kira joined while unwell, shared his screen, followed instructions and completed the simulation and quiz, with short answers.",
+        "additional_notes": "The Learning Lab submit button did not work, so Kira sent his PDF in the Zoom chat and I will upload it for him. Next lesson starts with a video about water wheels, and the Module 1 exam is coming up.",
+        "reasoning_patterns": [],
+        "misconceptions": [],
+        "skills_focus": [],
+        "confidence_patterns": [],
+        "participation_patterns": [],
+        "successful_strategies": [],
+        "accuracy_patterns": [],
+        "independence_patterns": [],
+        "vocabulary_patterns": [],
+        "communication_patterns": [],
+        "indicators": {},
+        "dashboard_subject": "Us Renewable Energy"
+      },
+      "skills": [
+        {
+          "evidence": "Answered the primary energy question correctly and knew what a hypothesis is.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Went back and read the instructions when asked.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Stayed focused while unwell and sent the PDF in chat when the submit button failed.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Calm and willing to try a new type of activity",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Correct about primary energy",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Solving a practical problem by sending the PDF in chat",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "following written instructions",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "balancing supply and demand in a simulation",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "classifying primary energy",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "taking records",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "solving a practical problem",
+          "source_field": "skills_observed"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Reading instructions fully before starting.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Explaining choices out loud while working.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Telling me when something is not clear.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Reading instructions fully before starting",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Explaining choices out loud",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Telling me when something is not clear",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Explain choices out loud, read instructions fully before starting, and describe the island plan in writing.",
+          "source_field": "next_priority"
+        }
+      ]
+    },
+    {
+      "session_date_iso": "2026-10-21",
+      "session_date": "21 October 2026",
+      "lesson_title": "Energy Transformations And Hydropower",
+      "subject": "",
+      "summary": "Kira compared the costs and benefits of fossil fuels and renewable energy, learned primary and secondary energy and commodities, followed energy transformations in a bike ride, met work and potential energy, and applied them to how a hydropower station makes electricity.",
+      "aim": "To help Kira explain the advantages and disadvantages of fossil fuels and renewable energy, and to understand energy, work and potential energy well enough to follow how a hydropower station makes electricity.",
+      "big_win": "Chose the higher dam gates as producing more electricity and explained that the water has more potential energy.",
+      "next_priority": "Use the revision website before the first module exam and draw an energy chain for a hydropower station.",
+      "current_unit": "Module 1: the global energy shift, primary and secondary energy, commodities, energy transformations, work and potential energy, and hydropower.",
+      "student_pacing": "Kira is working through Module 1 of the six-module, 25-hour US Renewable Energy course, and this was the second lesson with Diego. He is on pace, the first module exam is coming up and he has the revision website. The project is due on 18 December and competition dates should be shared early.",
+      "lesson_engagement": "Kira was polite, attentive and answered when asked, joining from his lunch break with a competition this week.",
+      "additional_notes": "Kira should use the revision website before the first module exam. The next lesson is next week and may start at 4:55 about once a month. Learning Lab and Canvas remain the source of truth for submitted work and deadlines.",
+      "student_voice": "Kira said, \"Visualize is important.\"",
+      "home_support": [
+        "Encourage Kira to spend five to ten minutes on the revision website, starting with Lesson 1.",
+        "Ask Kira to explain how a hydropower station makes electricity.",
+        "Keep an eye on Diego's invitation for the next lesson, which may start at 4:55 about once a month."
+      ],
+      "extension_task": "Find a hydropower station in Japan, note its reservoir, dam height and what it provides, and identify the energy transformations and where energy is lost as heat.",
+      "family_friendly_science_explanation": "Energy cannot be created or destroyed, only changed from one form to another. On a bike ride the energy in food becomes movement, sound and a little heat. At a hydropower station, water stored high up has potential energy that becomes movement and then electricity. Renewable energy costs a lot to build and has almost no fuel cost afterwards.",
+      "ideas_we_are_refining": "",
+      "strengths": [
+        "Following his own bike ride from food to movement",
+        "Using the dam picture to explain potential energy",
+        "Agreeing that electricity is a commodity after thinking about paying for it",
+        "Knowing that visualising helps him learn"
+      ],
+      "areas_for_growth": [
+        "Asking questions when a word is new",
+        "Writing the meaning of new terms down",
+        "Explaining answers in longer sentences"
+      ],
+      "student_glows": [
+        "Told Diego that visualising is important.",
+        "Followed his own bike ride from food to ATP to movement.",
+        "Used the dam picture to explain why higher water gives more energy.",
+        "Agreed that electricity is a commodity after thinking about paying for it."
+      ],
+      "student_grows": [
+        "Asking more questions when a word is new.",
+        "Writing the meaning of new terms down.",
+        "Explaining answers in longer sentences."
+      ],
+      "skills_observed": [
+        "comparing costs and benefits",
+        "using new vocabulary",
+        "applying supply and demand",
+        "following energy transformations",
+        "explaining potential energy"
+      ],
+      "next_steps": [
+        "Use the revision website for two short sessions this week",
+        "Draw an energy chain for a hydropower station",
+        "Explain why renewable energy costs more at the start and less over time"
+      ],
+      "resources": [
+        {
+          "title": "U.S. Energy Information Administration - What is energy?",
+          "url": "https://www.eia.gov/energyexplained/what-is-energy/",
+          "note": "Ask Kira to name three forms of energy from his day."
+        },
+        {
+          "title": "U.S. Department of Energy - How Hydropower Works",
+          "url": "https://www.energy.gov/eere/water/how-hydropower-works",
+          "note": "Ask Kira where the potential energy turns into electricity."
+        },
+        {
+          "title": "University of Calgary Energy Education - Primary energy",
+          "url": "https://energyeducation.ca/encyclopedia/Primary_energy",
+          "note": "Find two examples of primary energy and one of secondary energy."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "session_date": "21 October 2026",
+        "session_date_iso": "2026-10-21",
+        "lesson_title": "Energy Transformations And Hydropower",
+        "summary": "Kira compared the costs and benefits of fossil fuels and renewable energy, learned primary and secondary energy and commodities, followed energy transformations in a bike ride, met work and potential energy, and applied them to how a hydropower station makes electricity.",
+        "aim": "To help Kira explain the advantages and disadvantages of fossil fuels and renewable energy, and to understand energy, work and potential energy well enough to follow how a hydropower station makes electricity.",
+        "headline_insight": "Kira learns well from pictures and everyday examples and gives short accurate answers, but he is less confident with physics and rarely asks questions.",
+        "current_focus": "Module 1: global energy shift, energy transformations, work, potential energy and hydropower",
+        "big_win": "Chose the higher dam gates as producing more electricity and explained that the water has more potential energy.",
+        "next_priority": "Use the revision website before the first module exam and draw an energy chain for a hydropower station.",
+        "engagement_status": "Polite, attentive and answered when asked, even with a competition this week.",
+        "why_this_matters": "Understanding energy transformations and why renewable projects cost more at the start is the base for the rest of the course.",
+        "progress_since_last_update": "Moved from course orientation to the first content lesson of Module 1.",
+        "home_support": [
+          "Encourage Kira to spend five to ten minutes on the revision website, starting with Lesson 1.",
+          "Ask Kira to explain how a hydropower station makes electricity.",
+          "Keep an eye on Diego's invitation for the next lesson, which may start at 4:55 about once a month."
+        ],
+        "student_voice": "Kira said, \"Visualize is important.\"",
+        "upcoming_focus": [
+          "Module 1 revision website",
+          "Energy transformation chains",
+          "First module exam"
+        ],
+        "strengths": [
+          "Following his own bike ride from food to movement",
+          "Using the dam picture to explain potential energy",
+          "Agreeing that electricity is a commodity after thinking about paying for it",
+          "Knowing that visualising helps him learn"
+        ],
+        "areas_for_growth": [
+          "Asking questions when a word is new",
+          "Writing the meaning of new terms down",
+          "Explaining answers in longer sentences"
+        ],
+        "next_steps": [
+          "Use the revision website for two short sessions this week",
+          "Draw an energy chain for a hydropower station",
+          "Explain why renewable energy costs more at the start and less over time"
+        ],
+        "skills_observed": [
+          "comparing costs and benefits",
+          "using new vocabulary",
+          "applying supply and demand",
+          "following energy transformations",
+          "explaining potential energy"
+        ],
+        "engagement": "Polite, attentive and answered when asked. Joined from his lunch break with a competition this week.",
+        "misconceptions_noticed": "Thought energy depends on its type, called kinetic energy force, and first said electricity is not a commodity. Heard the word taxes as boxes for a moment.",
+        "confidence_level": "Attentive and accurate with short answers. Less confident in physics, which he described as his weaker area, and he said he had no questions.",
+        "successful_teaching_strategies": [
+          "drawing the island and the dam",
+          "using Kira's own bike ride",
+          "asking him to choose between two options and explain",
+          "linking physics to real life"
+        ],
+        "adaptation_to_reach_full_potential": "Kira learns well from drawings and everyday examples. I will keep using diagrams, the bike ride and the dam as anchors and ask Kira to draw the chain himself in the next lesson.",
+        "extension_task": "Find a hydropower station in Japan, note its reservoir, dam height and what it provides, and identify the energy transformations and where energy is lost as heat.",
+        "family_friendly_science_explanation": "Energy cannot be created or destroyed, only changed from one form to another. On a bike ride the energy in food becomes movement, sound and a little heat. At a hydropower station, water stored high up has potential energy that becomes movement and then electricity. Renewable energy costs a lot to build and has almost no fuel cost afterwards.",
+        "resources": [
+          {
+            "title": "U.S. Energy Information Administration - What is energy?",
+            "url": "https://www.eia.gov/energyexplained/what-is-energy/",
+            "note": "Ask Kira to name three forms of energy from his day."
+          },
+          {
+            "title": "U.S. Department of Energy - How Hydropower Works",
+            "url": "https://www.energy.gov/eere/water/how-hydropower-works",
+            "note": "Ask Kira where the potential energy turns into electricity."
+          },
+          {
+            "title": "University of Calgary Energy Education - Primary energy",
+            "url": "https://energyeducation.ca/encyclopedia/Primary_energy",
+            "note": "Find two examples of primary energy and one of secondary energy."
+          }
+        ],
+        "student_pacing": "Kira is working through Module 1 of the six-module, 25-hour US Renewable Energy course, and this was the second lesson with Diego. He is on pace, the first module exam is coming up and he has the revision website. The project is due on 18 December and competition dates should be shared early.",
+        "current_unit": "Module 1: the global energy shift, primary and secondary energy, commodities, energy transformations, work and potential energy, and hydropower.",
+        "student_glows": [
+          "Told Diego that visualising is important.",
+          "Followed his own bike ride from food to ATP to movement.",
+          "Used the dam picture to explain why higher water gives more energy.",
+          "Agreed that electricity is a commodity after thinking about paying for it."
+        ],
+        "student_grows": [
+          "Asking more questions when a word is new.",
+          "Writing the meaning of new terms down.",
+          "Explaining answers in longer sentences."
+        ],
+        "assignments_outstanding": [],
+        "lesson_engagement": "Kira was polite, attentive and answered when asked, joining from his lunch break with a competition this week.",
+        "additional_notes": "Kira should use the revision website before the first module exam. The next lesson is next week and may start at 4:55 about once a month. Learning Lab and Canvas remain the source of truth for submitted work and deadlines.",
+        "accuracy_patterns": [],
+        "confidence_patterns": [],
+        "independence_patterns": [],
+        "communication_patterns": [],
+        "successful_strategies": [],
+        "reasoning_patterns": [],
+        "skills_focus": [],
+        "vocabulary_patterns": [],
+        "misconceptions": [],
+        "participation_patterns": [],
+        "indicators": {},
+        "dashboard_subject": "Us Renewable Energy"
+      },
+      "skills": [
+        {
+          "evidence": "Told Diego that visualising is important.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Followed his own bike ride from food to ATP to movement.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Used the dam picture to explain why higher water gives more energy.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Agreed that electricity is a commodity after thinking about paying for it.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Following his own bike ride from food to movement",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Using the dam picture to explain potential energy",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Agreeing that electricity is a commodity after thinking about paying for it",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Knowing that visualising helps him learn",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "comparing costs and benefits",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "using new vocabulary",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "applying supply and demand",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "following energy transformations",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "explaining potential energy",
+          "source_field": "skills_observed"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Asking more questions when a word is new.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Writing the meaning of new terms down.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Explaining answers in longer sentences.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Asking questions when a word is new",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Writing the meaning of new terms down",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Explaining answers in longer sentences",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Use the revision website before the first module exam and draw an energy chain for a hydropower station.",
+          "source_field": "next_priority"
+        }
+      ]
+    },
+    {
+      "session_date_iso": "2026-10-14",
+      "session_date": "14 October 2026",
+      "lesson_title": "Course Orientation Energy Transition",
+      "subject": "",
+      "summary": "Kira had his first lesson. We got to know each other, agreed how the lessons, independent work, Learning Lab homework and project milestones will run, and he wrote reasoned answers about why we need to move from fossil fuels to renewable energy.",
+      "aim": "To welcome Kira to the course, agree how the lessons and independent work will run, and start thinking about why the world needs to move from fossil fuels to renewable energy and why that is difficult.",
+      "big_win": "Wrote a reasoned answer about the energy transition and linked it to his own cyanobacteria research.",
+      "next_priority": "Set up a weekly independent-work routine, send competition dates early and submit the first Learning Lab task in his own words.",
+      "current_unit": "Module 1: Introduction to energy sources and the transition from fossil fuels to renewable energy.",
+      "student_pacing": "At the very start of a six-module, 25-hour course. This lesson was mostly orientation, so Module 1 starts properly next lesson. Regular attendance and early notice of competitions will matter for the project due on 18 December.",
+      "lesson_engagement": "Kira was polite, attentive and willing to share, and wrote in the chat when asked.",
+      "additional_notes": "Kira should accept the lesson in the Learning Lab and reply to emails. Feedback on the Module 1 revision website is welcome. Learning Lab and Canvas remain the source of truth for submitted work and deadlines.",
+      "student_voice": "Kira told Diego he is researching whether cyanobacterial toxins affect the growth of land plants.",
+      "home_support": [
+        "Encourage Kira to book two fixed hours a week for Renewable Energy.",
+        "Ask Kira to send Diego his competition dates early.",
+        "Ask Kira to accept the lesson invitation and reply to Diego's emails."
+      ],
+      "extension_task": "Using two reliable sources, write half a page on one way cyanobacteria could contribute to renewable energy and say which part of his own research connects to it.",
+      "family_friendly_science_explanation": "Renewable energy comes from sources that are naturally replaced, such as sunshine, wind and flowing water. Coal, oil and gas are non-renewable and run out as we use them. Fossil fuels are easy to buy a little at a time, while renewable energy costs more to build but gives a steady supply that depends less on other countries.",
+      "ideas_we_are_refining": "",
+      "strengths": [
+        "Real research experience with cyanobacteria",
+        "Honest feedback about the Learning Lab",
+        "Clear written answers in the chat",
+        "Reflecting on his own habits with humour"
+      ],
+      "areas_for_growth": [
+        "Setting up a weekly independent-work routine",
+        "Sending competition dates early and answering emails",
+        "Checking energy claims with data"
+      ],
+      "student_glows": [
+        "Is already doing research with a professor on cyanobacteria and plant growth.",
+        "Gave honest feedback about the Learning Lab.",
+        "Added 25 and 50 correctly at once.",
+        "Wrote a reasoned answer about the energy transition."
+      ],
+      "student_grows": [
+        "Setting up a weekly independent-work routine.",
+        "Sending competition dates early and answering emails promptly.",
+        "Checking energy claims with data."
+      ],
+      "skills_observed": [
+        "introducing himself and his interests",
+        "planning study time",
+        "writing a short reasoned answer",
+        "thinking about cost and politics in the energy transition"
+      ],
+      "next_steps": [
+        "Book two fixed weekly hours and send unavailable dates",
+        "Write the Learning Lab answer on primary energy sources without AI",
+        "Read Module 1 and write three questions in a notebook"
+      ],
+      "resources": [
+        {
+          "title": "U.S. Energy Information Administration - Energy Explained",
+          "url": "https://www.eia.gov/energyexplained/",
+          "note": "Summarise one page on a renewable or non-renewable source."
+        },
+        {
+          "title": "Our World in Data - Japan Energy Country Profile",
+          "url": "https://ourworldindata.org/energy/country/japan",
+          "note": "See where Japan's energy comes from."
+        },
+        {
+          "title": "Our World in Data - Energy Production and Consumption",
+          "url": "https://ourworldindata.org/energy-production-consumption",
+          "note": "Find a pattern in the charts and explain it."
+        }
+      ],
+      "assignments_outstanding": [],
+      "raw_session": {
+        "session_date": "14 October 2026",
+        "session_date_iso": "2026-10-14",
+        "lesson_title": "Course Orientation Energy Transition",
+        "summary": "Kira had his first lesson. We got to know each other, agreed how the lessons, independent work, Learning Lab homework and project milestones will run, and he wrote reasoned answers about why we need to move from fossil fuels to renewable energy.",
+        "aim": "To welcome Kira to the course, agree how the lessons and independent work will run, and start thinking about why the world needs to move from fossil fuels to renewable energy and why that is difficult.",
+        "headline_insight": "Kira brings real research experience in cyanobacteria and a busy fencing schedule, so a clear weekly routine and early planning will matter.",
+        "current_focus": "Module 1: why the world needs to move from fossil fuels to renewable energy",
+        "big_win": "Wrote a reasoned answer about the energy transition and linked it to his own cyanobacteria research.",
+        "next_priority": "Set up a weekly independent-work routine, send competition dates early and submit the first Learning Lab task in his own words.",
+        "engagement_status": "Polite, attentive and willing to share.",
+        "why_this_matters": "A planned weekly routine will let Kira complete a 75-hour course alongside fencing and research.",
+        "progress_since_last_update": "This was the first lesson, so it sets a starting point.",
+        "home_support": [
+          "Encourage Kira to book two fixed hours a week for Renewable Energy.",
+          "Ask Kira to send Diego his competition dates early.",
+          "Ask Kira to accept the lesson invitation and reply to Diego's emails."
+        ],
+        "student_voice": "Kira told Diego he is researching whether cyanobacterial toxins affect the growth of land plants.",
+        "upcoming_focus": [
+          "Module 1 on energy sources",
+          "Checking claims about efficiency with data",
+          "Course project milestones"
+        ],
+        "strengths": [
+          "Real research experience with cyanobacteria",
+          "Honest feedback about the Learning Lab",
+          "Clear written answers in the chat",
+          "Reflecting on his own habits with humour"
+        ],
+        "areas_for_growth": [
+          "Setting up a weekly independent-work routine",
+          "Sending competition dates early and answering emails",
+          "Checking energy claims with data"
+        ],
+        "next_steps": [
+          "Book two fixed weekly hours and send unavailable dates",
+          "Write the Learning Lab answer on primary energy sources without AI",
+          "Read Module 1 and write three questions in a notebook"
+        ],
+        "skills_observed": [
+          "introducing himself and his interests",
+          "planning study time",
+          "writing a short reasoned answer",
+          "thinking about cost and politics in the energy transition"
+        ],
+        "engagement": "Polite, attentive and willing to share. Wrote in the chat when asked.",
+        "misconceptions_noticed": "Wrote that fossil fuels are more efficient than most renewables at making steam to turn a turbine. This is true for thermal power stations but not for wind, hydropower or solar panels, which do not boil water.",
+        "confidence_level": "Polite and clear when asked. Answers were short, so it is early to judge confidence with the content.",
+        "successful_teaching_strategies": [
+          "sketching a weekly calendar",
+          "asking for written answers in the chat",
+          "linking ideas to his research interests"
+        ],
+        "adaptation_to_reach_full_potential": "Kira has a busy training schedule and real research experience, so a clear weekly routine and early planning will matter. I will use written prompts as well as speaking, and link ideas to his interests.",
+        "extension_task": "Using two reliable sources, write half a page on one way cyanobacteria could contribute to renewable energy and say which part of his own research connects to it.",
+        "family_friendly_science_explanation": "Renewable energy comes from sources that are naturally replaced, such as sunshine, wind and flowing water. Coal, oil and gas are non-renewable and run out as we use them. Fossil fuels are easy to buy a little at a time, while renewable energy costs more to build but gives a steady supply that depends less on other countries.",
+        "resources": [
+          {
+            "title": "U.S. Energy Information Administration - Energy Explained",
+            "url": "https://www.eia.gov/energyexplained/",
+            "note": "Summarise one page on a renewable or non-renewable source."
+          },
+          {
+            "title": "Our World in Data - Japan Energy Country Profile",
+            "url": "https://ourworldindata.org/energy/country/japan",
+            "note": "See where Japan's energy comes from."
+          },
+          {
+            "title": "Our World in Data - Energy Production and Consumption",
+            "url": "https://ourworldindata.org/energy-production-consumption",
+            "note": "Find a pattern in the charts and explain it."
+          }
+        ],
+        "student_pacing": "At the very start of a six-module, 25-hour course. This lesson was mostly orientation, so Module 1 starts properly next lesson. Regular attendance and early notice of competitions will matter for the project due on 18 December.",
+        "current_unit": "Module 1: Introduction to energy sources and the transition from fossil fuels to renewable energy.",
+        "student_glows": [
+          "Is already doing research with a professor on cyanobacteria and plant growth.",
+          "Gave honest feedback about the Learning Lab.",
+          "Added 25 and 50 correctly at once.",
+          "Wrote a reasoned answer about the energy transition."
+        ],
+        "student_grows": [
+          "Setting up a weekly independent-work routine.",
+          "Sending competition dates early and answering emails promptly.",
+          "Checking energy claims with data."
+        ],
+        "assignments_outstanding": [],
+        "lesson_engagement": "Kira was polite, attentive and willing to share, and wrote in the chat when asked.",
+        "additional_notes": "Kira should accept the lesson in the Learning Lab and reply to emails. Feedback on the Module 1 revision website is welcome. Learning Lab and Canvas remain the source of truth for submitted work and deadlines.",
+        "participation_patterns": [],
+        "accuracy_patterns": [],
+        "misconceptions": [],
+        "independence_patterns": [],
+        "vocabulary_patterns": [],
+        "reasoning_patterns": [],
+        "skills_focus": [],
+        "confidence_patterns": [],
+        "communication_patterns": [],
+        "successful_strategies": [],
+        "indicators": {},
+        "dashboard_subject": "Us Renewable Energy"
+      },
+      "skills": [
+        {
+          "evidence": "Is already doing research with a professor on cyanobacteria and plant growth.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Gave honest feedback about the Learning Lab.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Added 25 and 50 correctly at once.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Wrote a reasoned answer about the energy transition.",
+          "source_field": "student_glows"
+        },
+        {
+          "evidence": "Real research experience with cyanobacteria",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Honest feedback about the Learning Lab",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Clear written answers in the chat",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Reflecting on his own habits with humour",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "introducing himself and his interests",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "planning study time",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "writing a short reasoned answer",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "thinking about cost and politics in the energy transition",
+          "source_field": "skills_observed"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Setting up a weekly independent-work routine.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Sending competition dates early and answering emails promptly.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Checking energy claims with data.",
+          "source_field": "student_grows"
+        },
+        {
+          "evidence": "Setting up a weekly independent-work routine",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Sending competition dates early and answering emails",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Checking energy claims with data",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Set up a weekly independent-work routine, send competition dates early and submit the first Learning Lab task in his own words.",
+          "source_field": "next_priority"
+        }
+      ]
+    }
+  ]
+}</script>
+<script>
+const DISCLAIMER = "This is a voluntary teaching resource created by Mr. Guevara to add as much value as possible for families and students. It is not a requirement of Crimson Global Academy, and other teachers may not provide anything similar — this is not part of what CGA officially offers. Please refer to the Learning Lab as the official Crimson Global Academy resource, where assignments, grades, deadlines, and formal progress reports are provided. The information here is supplementary and is not part of any official session report or progress report sent by the school.";
+
+const LINKEDIN_URL = "https://www.linkedin.com/in/diego-urrutia-guevara-150bb641/";
+
+const data = JSON.parse(document.getElementById('dashboard-v2-data').textContent);
+const name = data.student_first_name || "the student";
+
+function esc(s){
+  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* Some upstream data fields that are meant to be a list of short phrases were
+   saved either as a real JS/JSON array, OR (a data bug seen in a few student
+   files) as a single string holding a Python-repr list literal such as
+   "['phrase one', 'phrase two']". Both must render as natural prose, never as
+   raw bracket/quote syntax. This helper normalises either shape into a plain
+   array of strings; a normal sentence-shaped string is returned unchanged. */
+function parsePyListLiteral(str){
+  const trimmed = String(str).trim();
+  if (!/^\[[\s\S]*\]$/.test(trimmed)) return null;
+  const inner = trimmed.slice(1, -1).trim();
+  if (!inner) return [];
+  const parts = inner.split(/['"]\s*,\s*['"]/);
+  return parts.map(p => p.replace(/^\s*['"]/, "").replace(/['"]\s*$/, "").trim()).filter(Boolean);
+}
+
+function toArrayOfStrings(v){
+  if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
+  if (typeof v === "string") {
+    const parsed = parsePyListLiteral(v);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
+/* Join a list of short phrases into flowing prose: "a", "a and b", or
+   "a, b, and c". Returns "" for an empty/missing list so callers can hide
+   the field entirely instead of showing empty punctuation. */
+function joinProse(arr){
+  if (!arr || !arr.length) return "";
+  if (arr.length === 1) return arr[0];
+  if (arr.length === 2) return `${arr[0]} and ${arr[1]}`;
+  return `${arr.slice(0, -1).join(", ")}, and ${arr[arr.length - 1]}`;
+}
+
+/* Renders any field that might be a plain string, a real array, or the
+   Python-repr-list-as-string bug as clean prose text (HTML-escaped). */
+/* Capitalizes the first letter of a joined/flowing sentence without
+   touching the rest of the string (so mid-sentence proper nouns etc. are
+   left alone). Safe to call on an already-capitalized or empty string. */
+function capitalizeFirst(s){
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function proseField(v){
+  const asArray = toArrayOfStrings(v);
+  if (asArray !== null) return capitalizeFirst(esc(joinProse(asArray)));
+  return capitalizeFirst(esc(v || ""));
+}
+
+function footerHtml(){
+  return `<footer class="disclaimer">${esc(DISCLAIMER)}</footer>`;
+}
+
+const TARGET_ICON = `<svg class="target-icon" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="4" opacity=".35"/>
+  <circle cx="32" cy="32" r="15" fill="none" stroke="currentColor" stroke-width="4" opacity=".55"/>
+  <circle cx="32" cy="32" r="4" fill="currentColor"/>
+</svg>`;
+
+function eyebrow(label){
+  return `<div class="eyebrow-label">${TARGET_ICON}${esc(label)}</div>`;
+}
+
+/* ---------------- OVERVIEW TAB ---------------- */
+function pickHeadlineQuote(latest, quotes){
+  const placeholder = /student reflection to capture/i;
+  const lv = latest && latest.student_voice ? String(latest.student_voice).trim() : "";
+  if (lv && !placeholder.test(lv)) {
+    return { quote: lv, session_date: latest.session_date, lesson_title: latest.lesson_title };
+  }
+  if (quotes && quotes.length) return quotes[0];
+  return null;
+}
+
+function renderOverview(){
+  const s = data.stats || {};
+  const latest = data.sessions[0] || {};
+  const quotes = data.voice_quotes || [];
+  const latestDate = latest.session_date || "";
+  const headlineQuote = pickHeadlineQuote(latest, quotes);
+
+  let html = `
+    ${eyebrow("Overview")}
+    <h2 class="panel-title">Overview</h2>
+    <p class="panel-sub">A quick snapshot of ${esc(name)}'s learning journey so far.</p>
+    <div class="stat-row">
+      <div class="stat"><div class="num">${s.sessions_logged ?? 0}</div><div class="label">Sessions logged</div></div>
+      <div class="stat"><div class="num">${s.distinct_skills_tried ?? 0}</div><div class="label">Distinct skills tried</div></div>
+      <div class="stat"><div class="num">${s.milestones_hit ?? 0}</div><div class="label">Milestones hit</div></div>
+    </div>
+    <div class="focus-row">
+      <div class="focus-card win"><div class="eyebrow">Big win</div>${esc(latest.big_win || "")}</div>
+      <div class="focus-card tonight"><div class="eyebrow">Try tonight</div>${esc((latest.home_support && latest.home_support[0]) || "")}</div>
+      <div class="focus-card edge"><div class="eyebrow">Growing edge</div>${esc((latest.growing_next && latest.growing_next[0] && latest.growing_next[0].evidence) || "")}</div>
+    </div>
+    ${headlineQuote ? `
+    <div class="focus-card voice" style="border-left:4px solid var(--accent);background:var(--accent-wash);margin-bottom:18px;">
+      <div class="eyebrow">In ${esc(name)}'s own words</div>
+      <blockquote style="margin:2px 0 6px;font-family:var(--font-display);font-size:1.1rem;font-style:italic;color:var(--ink);">&ldquo;${esc(headlineQuote.quote)}&rdquo;</blockquote>
+      <div class="interp" style="font-size:0.85rem;color:var(--ink-2);">From "${esc(headlineQuote.lesson_title || "")}" (${esc(headlineQuote.session_date || "")})</div>
+    </div>` : ""}
+    <div class="card">
+      <h3>Since we last looked</h3>
+      <p>${latestDate ? `<strong>As of ${esc(latestDate)}</strong> — ` : ""}${esc(latest.raw_session && latest.raw_session.progress_since_last_update && Array.isArray(latest.raw_session.progress_since_last_update) ? latest.raw_session.progress_since_last_update[0] : (latest.raw_session ? latest.raw_session.progress_since_last_update : "") || "")}</p>
+    </div>
+    <div class="card">
+      <h3>What this lesson was about</h3>
+      <p>${latestDate ? `<strong>As of ${esc(latestDate)}</strong> — ` : ""}${esc(latest.family_friendly_science_explanation || latest.summary || "")}</p>
+    </div>
+    <div class="card">
+      <h3>More in ${esc(name)}'s own words</h3>
+      ${quotes.map(q => `
+        <div class="quote-card">
+          <blockquote>&ldquo;${esc(q.quote)}&rdquo;</blockquote>
+          <div class="interp">From "${esc(q.lesson_title)}" (${esc(q.session_date)}) — this shows ${esc(name)} thinking in their own terms, not just repeating a definition.</div>
+        </div>`).join("")}
+    </div>
+  `;
+  document.getElementById('tab-overview').innerHTML = html + footerHtml();
+}
+
+/* ---------------- PROGRESS TAB (chart) ---------------- */
+const STAGE_Y = {Emerging: 3, Developing: 2, Growing: 1, Secure: 0};
+const STAGE_RANK = {Emerging: 0, Developing: 1, Growing: 2, Secure: 3};
+const STAGE_BY_RANK = ["Emerging", "Developing", "Growing", "Secure"];
+// A small categorical palette assigned by thread INDEX (not by name), so it
+// works for any student's thread names. Chosen for strong hue separation
+// (blue / rust-orange / violet / mustard-gold) rather than shades of one
+// colour, while staying muted/earthy so it still sits inside the warm,
+// cream "earth" theme. Distinct in both hue and lightness so the lines
+// stay tellable apart for common red-green colour vision deficiencies too.
+const THREAD_PALETTE = ["#2A6F8F", "#B5551F", "#6B4C9A", "#B58900"];
+function colorForThread(index){
+  return THREAD_PALETTE[index % THREAD_PALETTE.length];
+}
+const LINE_COL = "#1D211C24";
+const INK2 = "#4A5148";
+const INK3 = "#757C72";
+
+function shortDate(iso){
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-GB", {day:"numeric", month:"short"});
+}
+
+function buildChartSVG(threads){
+  const W = 780, H = 300, padL = 140, padR = 20, padT = 20, padB = 46;
+  const allDates = [...new Set(Object.values(threads).flat().map(p => p.session_date_iso))].sort();
+  const x = d => {
+    const idx = allDates.indexOf(d);
+    const n = Math.max(allDates.length - 1, 1);
+    return padL + (idx / n) * (W - padL - padR);
+  };
+  const rowH = (H - padT - padB) / 4;
+  const y = stage => padT + STAGE_Y[stage] * rowH + rowH / 2;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-ui),sans-serif">`;
+
+  // Stage rows: qualitative stage NAMES are the only y-axis labels, never numbers.
+  ["Secure","Growing","Developing","Emerging"].forEach((stage, i) => {
+    const yy = padT + i * rowH + rowH / 2;
+    svg += `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="${LINE_COL}" stroke-width="1" stroke-dasharray="3 5"/>`;
+    svg += `<text x="8" y="${yy + 4}" font-size="12" fill="${INK2}" font-weight="700">${stage}</text>`;
+  });
+
+  // Dated x-axis: a step line under the plot with a dashed tick per session date.
+  const axisY = padT + 4 * rowH;
+  svg += `<line x1="${padL}" y1="${axisY}" x2="${W - padR}" y2="${axisY}" stroke="${LINE_COL}" stroke-width="1"/>`;
+  allDates.forEach(d => {
+    const px = x(d);
+    svg += `<line x1="${px}" y1="${axisY}" x2="${px}" y2="${axisY + 6}" stroke="${LINE_COL}" stroke-width="1" stroke-dasharray="2 3"/>`;
+    svg += `<text x="${px}" y="${axisY + 22}" font-size="10" fill="${INK3}" text-anchor="middle" transform="rotate(0 ${px} ${axisY+22})" font-family="var(--font-data),monospace">${shortDate(d)}</text>`;
+  });
+
+  let pointId = 0;
+  const points = [];
+  Object.entries(threads).forEach(([threadName, pts], threadIndex) => {
+    const color = colorForThread(threadIndex);
+    const sorted = [...pts].sort((a,b) => a.session_date_iso.localeCompare(b.session_date_iso));
+    // Step line (not a smooth diagonal): holds the current stage until the
+    // next dated observation, which better reflects a qualitative plateau.
+    let path = "";
+    sorted.forEach((p, i) => {
+      const px = x(p.session_date_iso), py = y(p.stage);
+      if (i === 0) { path += `M${px},${py} `; }
+      else {
+        const prevPx = x(sorted[i-1].session_date_iso);
+        path += `L${px},${y(sorted[i-1].stage)} L${px},${py} `;
+      }
+    });
+    svg += `<path d="${path.trim()}" fill="none" stroke="${color}" stroke-width="2.5" opacity="0.85"/>`;
+    sorted.forEach(p => {
+      const px = x(p.session_date_iso), py = y(p.stage);
+      const id = "pt" + (pointId++);
+      points.push({id, threadName, ...p});
+      svg += `<circle cx="${px}" cy="${py}" r="5" fill="${color}" stroke="${'#FBF9F3'}" stroke-width="1.5" style="cursor:pointer" onclick="showEvidence('${id}')"/>`;
+    });
+  });
+  svg += `</svg>`;
+  window.__chartPoints = points;
+  return svg;
+}
+
+function showEvidence(id){
+  const p = (window.__chartPoints || []).find(pt => pt.id === id);
+  const el = document.getElementById('evidence-pop');
+  if (!el || !p) return;
+  el.innerHTML = `<strong>${esc(p.threadName)} — ${esc(p.stage)}</strong> (${esc(p.session_date)}, "${esc(p.lesson_title)}")<br>${esc(p.evidence)}`;
+  el.classList.add('show');
+  el.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+function renderProgress(){
+  const threads = data.skill_threads || {};
+  const lp = data.learning_profile || {};
+  const milestones = data.milestones || [];
+
+  let legend = Object.keys(threads).map((k, i) =>
+    `<span><span class="legend-dot" style="background:${colorForThread(i)}"></span>${esc(k)}</span>`
+  ).join(" &nbsp; ");
+
+  let html = `
+    ${eyebrow("Progress")}
+    <h2 class="panel-title">Progress</h2>
+    <p class="panel-sub">These are Mr. Guevara's qualitative professional observations from lessons, not a score or grade. Click any point on the chart for the evidence it is drawn from.</p>
+    <div class="card chart-card">
+      <h3>Skills over time (qualitative stages)</h3>
+      ${buildChartSVG(threads)}
+      <div class="chart-legend">${legend}</div>
+      <div id="evidence-pop" class="evidence-pop"></div>
+    </div>
+    <div class="card">
+      <h3>Moments that mattered</h3>
+      ${milestones.map(m => `
+        <div class="milestone">
+          <div class="dot"></div>
+          <div>
+            <div class="date">${esc(m.session_date)}</div>
+            <strong>${esc(m.title)}</strong>
+            <div>${esc(m.detail)}</div>
+          </div>
+        </div>`).join("")}
+    </div>
+    <div class="card">
+      <h3>Learning profile</h3>
+      <div class="profile-grid" style="margin-top:10px;">
+        ${[
+          ["Engages best when", lp.engages_best_when],
+          ["Responds well to", lp.responds_well_to],
+          ["Often curious about", lp.often_curious_about],
+          ["Currently trying", lp.currently_trying],
+        ].map(([label, value]) => {
+          const text = proseField(value);
+          if (!text) return "";
+          return `<div class="item"><div class="k">${esc(label)}</div>${text}</div>`;
+        }).join("")}
+      </div>
+    </div>
+  `;
+  document.getElementById('tab-progress').innerHTML = html + footerHtml();
+}
+
+/* ---------------- HELP AT HOME TAB ---------------- */
+function renderHelpAtHome(){
+  const latest = data.sessions[0] || {};
+  const askQuestions = (latest.raw_session && latest.raw_session.next_steps) || [];
+  let html = `
+    ${eyebrow("Help at Home")}
+    <h2 class="panel-title">Help at Home</h2>
+    <p class="panel-sub">This is optional and conversational, not homework — a few ideas if a moment naturally comes up at home.</p>
+    <div class="card">
+      <h3>Ask ${esc(name)}</h3>
+      <ul class="plain">
+        ${askQuestions.slice(0,3).map(q => `<li>${esc(q)}</li>`).join("")}
+      </ul>
+    </div>
+    <div class="card">
+      <h3>This week's home-support idea</h3>
+      <ul class="plain">${(latest.home_support || []).map(h => `<li>${esc(h)}</li>`).join("")}</ul>
+    </div>
+    <div class="card">
+      <h3>Resources from the latest session</h3>
+      ${(latest.resources || []).map(r => `
+        <div class="resource-link">
+          <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>
+          <div class="note">${esc(r.note)}</div>
+        </div>`).join("")}
+    </div>
+  `;
+  document.getElementById('tab-helpathome').innerHTML = html + footerHtml();
+}
+
+/* ---------------- SESSIONS TAB ---------------- */
+function renderSessions(){
+  const sessions = data.sessions || [];
+  let html = `
+    ${eyebrow("Sessions")}
+    <h2 class="panel-title">Sessions</h2>
+    <p class="panel-sub">Full chronological session history, newest first. Click any session to expand it.</p>
+  `;
+  sessions.forEach(s => {
+    html += `
+      <details class="session">
+        <summary>${esc(s.lesson_title)}<span class="sdate">${esc(s.session_date)}</span></summary>
+        <div class="session-body">
+          <h4>Summary</h4><p>${esc(s.summary)}</p>
+          <h4>Strengths / glows</h4>
+          <ul class="plain">${(s.skills || []).map(sk => `<li>${esc(sk.evidence)}</li>`).join("")}</ul>
+          <h4>Growing next</h4>
+          <ul class="plain">${(s.growing_next || []).map(g => `<li>${esc(g.evidence)}</li>`).join("")}</ul>
+          <h4>Resources</h4>
+          ${(s.resources || []).map(r => `<div class="resource-link"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a><div class="note">${esc(r.note)}</div></div>`).join("")}
+        </div>
+      </details>
+    `;
+  });
+  document.getElementById('tab-sessions').innerHTML = html + footerHtml();
+}
+
+/* ---------------- ABOUT TAB ---------------- */
+function renderAbout(){
+  const chips = ["Primary &amp; Secondary","IGCSE &middot; A-Level &middot; US Diploma","UK &middot; Spain &middot; New Zealand","Students on 4 continents","Teacher training"];
+  const html = `
+    ${eyebrow("About")}
+    <h2 class="panel-title">About Mr. Guevara</h2>
+    <p class="panel-sub">The teacher behind this dashboard.</p>
+    <div class="card about-hero">
+      ${eyebrow("The teacher behind this dashboard")}
+      <div class="about-photo-wrap">
+        <img class="about-photo" src="https://educadug.github.io/discovery-lab/about/diego.jpg?v=2" alt="Diego Urrutia Guevara" loading="lazy">
+      </div>
+      <h3 class="about-heading">Diego Urrutia Guevara</h3>
+      <p class="about-subheading">Studied in Norway, Spain and New Zealand. Taught in the UK, Spain and New Zealand. Now teaching students across four continents.</p>
+      <div class="about-chip-row">${chips.map(c => `<span class="about-chip">${c}</span>`).join("")}</div>
+      <a class="btn-linkedin" href="${esc(LINKEDIN_URL)}" target="_blank" rel="noopener noreferrer">Connect on LinkedIn</a>
+    </div>
+    <div class="card">
+      <h3>About Diego</h3>
+      <p>Diego's classroom has never had one nationality in it. He studied in Norway, Spain and New Zealand, taught in both private and state schools in the United Kingdom and Spain, and now teaches from New Zealand to students in Europe, the United States, Japan, China, Southeast Asia and Australia.</p>
+      <p>That range is not a travel list — it is the substance of how he teaches. Students arrive from different school systems, different languages and very different ideas of what a good answer looks like. Teaching all of them well means building lessons around thinking rather than around the habits of any single curriculum.</p>
+      <p>Before and alongside education, Diego worked in international consultancy and biodiversity. He believes students learn best when knowledge is connected to real problems, investigation, decision-making and the world beyond the classroom.</p>
+      <p>Running through all of it is a particular interest in the thoughtful use of technology and AI in education. Discovery Lab is where that becomes something you can click: simulations and investigations where students experiment, decide, test ideas and learn by doing.</p>
+    </div>
+    <div class="card about-closing">
+      <h3>Full background and experience</h3>
+      <p>Qualifications, teaching history and professional work are all on LinkedIn. Connect there, or get in touch.</p>
+      <a class="btn-linkedin" href="${esc(LINKEDIN_URL)}" target="_blank" rel="noopener noreferrer">View LinkedIn profile</a>
+    </div>
+  `;
+  document.getElementById('tab-about').innerHTML = html + footerHtml();
+}
+
+renderOverview();
+renderProgress();
+renderHelpAtHome();
+renderSessions();
+renderAbout();
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
